@@ -211,7 +211,7 @@ export default {
   position: fixed;
   &--center {
     left: 50%;
-    top: 50%;
+    top: 20%;
     transform: translate(-50%, -50%);
   }
 }
@@ -220,15 +220,15 @@ export default {
 }
 .card {
   width: 300px;
-  height: 300px;
+  height: 400px;
   color: white;
   &--two {
     width: 280px;
-    top: 49%;
+    top: 21%;
   }
   &--three {
     width: 260px;
-    top: 40%;
+    top: 22%;
   }
 }
 </style>
