@@ -211,7 +211,7 @@ export default {
   position: fixed;
   &--center {
     left: 50%;
-    top: 20%;
+    top: 35%;
     transform: translate(-50%, -50%);
   }
 }
@@ -224,11 +224,11 @@ export default {
   color: white;
   &--two {
     width: 280px;
-    top: 21%;
+    top: 36%;
   }
   &--three {
     width: 260px;
-    top: 22%;
+    top: 37%;
   }
 }
 </style>
