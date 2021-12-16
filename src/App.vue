@@ -1,30 +1,7 @@
 <template>
   <v-app>
-    <v-app-bar app dark>
-      <div class="d-flex align-center">
-        <h1>Insider Stall Test123</h1>
-      </div>
-    </v-app-bar>
     <v-main class="container">
       <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0]">
-    <v-menu transition="slide-y-transition" bottom>
-      <template v-slot:activator="{ on, attrs }" style="z-index: 1; width: 90%;">
-          <v-btn  class="purple rounded-borders card" color="primary" dark v-bind="attrs" v-on="on" 
-          style="z-index: 1; height: 35px; width: 85%">
-            {{current.text}}
-          </v-btn>
-          <v-btn color="red" fab small dark style="left: 9px">
-            <v-icon>mdi-bell-ring</v-icon>
-          </v-btn>
-      </template>
-      <v-list>
-        <v-list-item 
-          v-for="(item, i) in items"
-          :key="i">
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item>
-      </v-list>
-    </v-menu>
         <Vue2InteractDraggable
           v-if="isVisible"
           :interact-x-threshold="100"
