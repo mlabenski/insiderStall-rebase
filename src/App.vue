@@ -234,7 +234,7 @@ export default {
       // still allows us to bind the 
     },
     userOccupiesStall() {
-      this.loadFloorData();
+      //this.loadFloorData();
     }
 
 
