@@ -1,7 +1,9 @@
 <template>
   <v-app>
     <v-main class="container">
-      <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0]">
+      <h2 v-if="user">{{user}}</h2>
+      <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0] && userOccupiesStall">
+        <h2>This view would load if a user occupies a stall</h2>
         <Vue2InteractDraggable
           v-if="isVisible"
           :interact-x-threshold="100"
@@ -9,11 +11,22 @@
           @draggedLeft="decline"
           class="rounded-borders card"
         >
-          <FloorCard @clicked="onGenderSwitch" @booking="onBooking" :title="current.text" :stallData="dataInView"/>
+          <FloorOccupiedCard @clicked="onGenderSwitch" :floor_num="index" :stallID="userOccupiesStallID" @booking="onBooking"  @unoccupyStall="onUnoccupy"  :title="current.text"  :stallData="dataInView" :user="user"/>
+        </Vue2InteractDraggable>
+      </div>
+      <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0] && !userOccupiesStall">
+        <Vue2InteractDraggable
+          v-if="isVisible"
+          :interact-x-threshold="100"
+          @draggedRight="accept"
+          @draggedLeft="decline"
+          class="rounded-borders card"
+        >
+          <FloorCard @clicked="onGenderSwitch" :floor_num="index"  @booking="onBooking" :title="current.text"  :stallData="dataInView"/>
         </Vue2InteractDraggable>
       </div>
     <div
-      v-if="next"
+      v-if="next && !userOccupiesStall"
       class="rounded-borders card card--two fixed fixed--center"
       style="z-index: 2">
       <FloorCard :title="next.text" />
@@ -25,19 +38,20 @@
 <script>
 import { Vue2InteractDraggable } from "vue2-interact";
 import FloorCard from '@/components/FloorCard'
-import { db, currentTime } from '@/services/firebase'
-
+import { db, currentTime, auth } from '@/services/firebase'
+import FloorOccupiedCard from '@/components/FloorCardOccupied';
 
 const firebaseData = db.collection("stall_id");
 var unsubscribe;
 
 export default {
   name: "app",
-  components: { Vue2InteractDraggable, FloorCard },
+  components: { Vue2InteractDraggable, FloorCard, FloorOccupiedCard },
   data() {
     return {
       isVisible: true,
       index: 0,
+      user: null,
       selection: 1,
       genderSelected : 'b',
       //pipe the current data into cards. like here.
@@ -56,10 +70,12 @@ export default {
       ],
       testFirebaseData: [],
       stallData: [],
-      dataInView: []
+      dataInView: [],
+      userOccupiesStall: false
     };
   },
   mounted() {
+    this.loginUser();
     //this.loadFloorsInitally();
             //this.loadFloors();
     //should be able to pass this out right
@@ -70,7 +86,8 @@ export default {
         this.stallData.push({
           id: doc.id,
           occupied: doc.data().occupied,
-          duration: doc.data().duration.seconds
+          duration: doc.data().duration.seconds,
+          user: doc.data().user
         });
       });
       console.log(this.stallData);
@@ -116,6 +133,19 @@ export default {
           console.log("Error getting documents: ", error);
         });
       },
+    loginUser() {
+    auth.signInAnonymously()
+    .then(() => {
+      auth.onAuthStateChanged((user) => {
+        if (user) 
+        { 
+          console.log('user.uid ' +user.uid);
+          this.user = user.uid;
+        } 
+        else { console.log('user '+user.uid) }
+      });
+    }).catch((error) => { console.error(error) });
+    },
     accept() {
       if(this.index!=2){
       setTimeout(() => this.isVisible = false, 200)
@@ -145,7 +175,15 @@ export default {
       console.log('Database update: A booking has been made at stall: '+value+ ' now we send to firebase');
       var myTimestamp = currentTime;
       console.log(myTimestamp+' is when the object was stored.')
-      db.collection("stall_id").doc(value).update({occupied: true, duration: myTimestamp});
+      db.collection("stall_id").doc(value).update({occupied: true, duration: myTimestamp, user: this.user});
+    },
+    onUnoccupy(stallID){
+      var myTimestamp = currentTime;
+      console.log('the stall thats unoccupied is '+stallID)
+      db.collection("stall_id").doc(stallID).update({occupied: false, duration: myTimestamp, user: ''});
+      this.loadFloorsInitally();
+      this.userOccupiesStall = false;
+      
     },
     convertDurationToElapsed(stallNumber){
       let start = Date.now();
@@ -166,6 +204,14 @@ export default {
       console.log('Summary update: the selected gender is '+ this.genderSelected);
       for (let i =0; i < this.stallData.length; i++){
         //first check for floor
+        //var userLength = String(this.stallData[i].user);
+        //need to pass in the stall data, but lets just work on un-occupying the stall for now
+        if(this.user == this.stallData[i].user){
+          console.log('User '+ this.user+' attached to '+ this.stallData[i].id);
+          this.userOccupiesStall = true;
+          this.userOccupiesStallID = this.stallData[i].id;
+
+        }
         if(this.stallData[i].id.charAt(0) == floorValue && this.stallData[i].id.charAt(1) == this.genderSelected){
             console.log('Summary update: found a stall that belongs in current view '+ this.stallData[i].id);
             var elapsedTime = this.convertDurationToElapsed(i);
@@ -174,7 +220,12 @@ export default {
       }
       // all of the durations should be converted by this time
       this.dataInView = finalData;
-    }
+    },
+    //we need some type of method : 
+    //method: whenever a user joins the app. we should check if any users are tied to an stall.
+    //if they are tied to that stall, then we should place a variable "needsToCloseOut"
+    //"needsToCloseOut = true" is going to display a full screen  with the timer + "unOccupy" the stall
+
   },
   watch: {
     dataInView() {

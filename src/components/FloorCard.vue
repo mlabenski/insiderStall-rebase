@@ -119,6 +119,7 @@ export default {
       bookStall(stallNum, gender, floor){
         if(stallNum!=null && gender!=null && floor!=null){
           console.log('stall has been booked');
+          console.log('stall is on floor '+floor)
           var id = '';
           //create the id to compare w. firebase data
           if(gender == 0){ //gender=0 is a male
@@ -129,6 +130,7 @@ export default {
             id = String([floor+1, 'f', stallNum+1])
             id = id.replace(/[, ]+/g, "").trim();
           }
+          console.log('booking '+ id)
           this.$emit('booking', id)
         }
         else {
