@@ -1,8 +1,8 @@
 <template>
   <v-app>
     <v-main class="container">
-      <h2 v-if="user">{{user}}</h2>
-      <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0] && userOccupiesStall">
+      <h2 v-if="dataInView[0]"></h2>
+      <div class="fixed fixed--center" style="z-index: 3" v-if="userOccupiesStall">
         <h2>This view would load if a user occupies a stall</h2>
         <Vue2InteractDraggable
           v-if="isVisible"
@@ -14,7 +14,7 @@
           <FloorOccupiedCard @clicked="onGenderSwitch" :floor_num="index" :stallID="userOccupiesStallID" @booking="onBooking"  @unoccupyStall="onUnoccupy"  :title="current.text"  :stallData="dataInView" :user="user"/>
         </Vue2InteractDraggable>
       </div>
-      <div class="fixed fixed--center" style="z-index: 3" v-if="dataInView[0] && !userOccupiesStall">
+      <div class="fixed fixed--center" style="z-index: 3" v-if="!userOccupiesStall">
         <Vue2InteractDraggable
           v-if="isVisible"
           :interact-x-threshold="100"
@@ -232,6 +232,9 @@ export default {
       console.log('something occured')
       // what if we pass the duration here. (set the elapsed time in the data variable)
       // still allows us to bind the 
+    },
+    userOccupiesStall() {
+      this.loadFloorData();
     }
 
 
