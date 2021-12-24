@@ -40,6 +40,7 @@ import { Vue2InteractDraggable } from "vue2-interact";
 import FloorCard from '@/components/FloorCard'
 import { db, currentTime, auth } from '@/services/firebase'
 import FloorOccupiedCard from '@/components/FloorCardOccupied';
+import { mapGetters, mapActions } from "vuex";
 
 const firebaseData = db.collection("stall_id");
 var unsubscribe;
@@ -71,15 +72,18 @@ export default {
       testFirebaseData: [],
       stallData: [],
       dataInView: [],
+      vuexStallData : [],
       userOccupiesStall: false
     };
   },
   mounted() {
     this.loginUser();
+    this.loadAllStalls();
     //this.loadFloorsInitally();
             //this.loadFloors();
     //should be able to pass this out right
   },
+
   created() {
     firebaseData.get().then(snapshot => {
       snapshot.forEach(doc => {
@@ -118,9 +122,12 @@ export default {
     },
     next() {
       return this.cards[this.index + 1]
-    }
+    },
+    ...mapGetters({ currentUser: "currentUser", stalls: "stalls", floorStalls: "getStallsByFloor" })
+    
   },
   methods: {
+    ...mapActions(["loginUser", "loadAllStalls"]),
     loadFloorsInitally() {
       db.collection("stall_id")
         .get()
@@ -228,14 +235,10 @@ export default {
 
   },
   watch: {
-    dataInView() {
-      console.log('something occured')
-      // what if we pass the duration here. (set the elapsed time in the data variable)
-      // still allows us to bind the 
+    index: function (val) {
+      this.vuexStallData = this.floorStalls(val+1);
+      console.log(this.vuexStallData);
     },
-    userOccupiesStall() {
-      //this.loadFloorData();
-    }
 
 
       //this is only going to load the available data for the current front-end configuration
