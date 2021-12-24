@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main class="container">
-      <h2 v-if="dataInView[0]"></h2>
+      <h2 v-if="stalls"></h2>
       <div class="fixed fixed--center" style="z-index: 3" v-if="userOccupiesStall">
         <h2>This view would load if a user occupies a stall</h2>
         <Vue2InteractDraggable
@@ -22,7 +22,7 @@
           @draggedLeft="decline"
           class="rounded-borders card"
         >
-          <FloorCard @clicked="onGenderSwitch" :floor_num="index"  @booking="onBooking" :title="current.text"  :stallData="dataInView"/>
+          <FloorCard @clicked="onGenderSwitch" :floor_num="index"  @booking="onBooking" :title="current.text" :stallData="dataInView" :storeFloorStalls="stallState"/>
         </Vue2InteractDraggable>
       </div>
     <div
@@ -37,10 +37,10 @@
 
 <script>
 import { Vue2InteractDraggable } from "vue2-interact";
-import FloorCard from '@/components/FloorCard'
+import FloorCard from '@/components/FloorCardStore'
 import { db, currentTime, auth } from '@/services/firebase'
 import FloorOccupiedCard from '@/components/FloorCardOccupied';
-import { mapGetters, mapActions } from "vuex";
+import { mapGetters, mapActions, mapMutations, mapState } from "vuex";
 
 const firebaseData = db.collection("stall_id");
 var unsubscribe;
@@ -79,12 +79,25 @@ export default {
   mounted() {
     this.loginUser();
     this.loadAllStalls();
+    this.vuexStallData = this.stallState;
+    console.log('mounted  call of vuexstalldata = '+ this.vuexStallData)
     //this.loadFloorsInitally();
             //this.loadFloors();
     //should be able to pass this out right
   },
 
   created() {
+    this.unsubscribeStallData = this.$store.subscribe((mutation, state) => {
+      if (mutation.type === 'set_current_floor_increment' || 
+          mutation.type === 'set_current_floor_decrement' ||
+          mutation.type === 'set_current_gender') {
+            //do the normal logic to update the state specific stall info
+            // awesome resource: https://dev.to/viniciuskneves/watch-for-vuex-state-changes-2mgj
+            console.log("logging vuex state variable"+ state);
+            this.vuexStallData = this.stallState;
+            console.log(this.vuexStallData);
+          }
+    }),
     firebaseData.get().then(snapshot => {
       snapshot.forEach(doc => {
         this.stallData.push({
@@ -123,11 +136,13 @@ export default {
     next() {
       return this.cards[this.index + 1]
     },
-    ...mapGetters({ currentUser: "currentUser", stalls: "stalls", floorStalls: "getStallsByFloor" })
+    ...mapState(["stalls"]),
+    ...mapGetters({ currentUser: "currentUser",  floorStalls: "getStallsByFloor", countFloor: "getCurrentFloor", stallState: "getStallWithState" })
     
   },
   methods: {
-    ...mapActions(["loginUser", "loadAllStalls"]),
+    ...mapMutations(['set_current_gender']),
+    ...mapActions(['increaseFloor','decreaseFloor', "updateGender" ,"loginUser", "loadAllStalls"]),
     loadFloorsInitally() {
       db.collection("stall_id")
         .get()
@@ -157,6 +172,9 @@ export default {
       if(this.index!=2){
       setTimeout(() => this.isVisible = false, 200)
       setTimeout(() => {
+        // we could prob just update the state here/ the current floor
+        this.increaseFloor();
+        console.log('accessing getter for count floor: '+this.countFloor)
         this.index++
         this.isVisible = true
         this.loadFloorData();
@@ -167,6 +185,8 @@ export default {
       if(this.index!=0){
       setTimeout(() => (this.isVisible = false), 200);
       setTimeout(() => {
+        this.decreaseFloor();
+        console.log('accessing getter for count floor: '+this.countFloor);
         this.index--;
         this.isVisible = true;
         this.loadFloorData();
@@ -174,7 +194,8 @@ export default {
       }
     },
     onGenderSwitch(value) {
-      console.log('Visual update: Gender has switched to ' + value)
+      console.log('Visual update: Gender has switched to ' + value);
+      this.updateGender(value);
       this.genderSelected = value;
       this.loadFloorData();
     },
@@ -235,10 +256,6 @@ export default {
 
   },
   watch: {
-    index: function (val) {
-      this.vuexStallData = this.floorStalls(val+1);
-      console.log(this.vuexStallData);
-    },
 
 
       //this is only going to load the available data for the current front-end configuration

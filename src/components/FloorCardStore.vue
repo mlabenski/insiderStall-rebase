@@ -37,12 +37,13 @@
 </template>
 
 <script>
+import {  mapActions, mapState } from "vuex";
+
 export default {
     name: 'floor-card-store',
     data: ()=> ({
         selection: 1,
         stallSelection: null,
-        genderSelection: 0,
         isOrange: true,
         timerOne: null,
         timerOneRunning: false,
@@ -52,7 +53,6 @@ export default {
         timeTwo: 0,
         occupiedCheckOne: false,
         occupiedCheckTwo: false,
-        colorOfCard: 'orange',
     }),
     created() {
       this.timerOneRunning == false;
@@ -102,23 +102,54 @@ export default {
             type: Array
         }
     },
-    watch: {
-      genderSelection: function() {
-        if(this.genderSelection == 0){
-          this.colorOfCard = 'orange';
-          this.$emit('clicked', 'b');
-        }
-        else if (this.genderSelection == 1){
-          this.colorOfCard = 'teal';
-          this.$emit('clicked', 'f')
+    computed: {
+      ...mapState(["stalls", "currentGender"]),
+      genderSelection: {
+        get () {
+          var stateGender = this.$store.state.currentGender;
+          if(stateGender == 'b'){
+            return 0;
+          }
+          else if(stateGender =='f'){
+            return 1;
+          }
+          else {
+            return 1;
+          }
+        },
+        set (value) {
+          if (value == 0){
+            this.updateGender('b');
+          }
+          else if(value == 1){
+            this.updateGender('f');
+          }
+          else {
+             this.updateGender('f');
+          }
         }
       },
+      colorOfCard: function() {
+        if(this.genderSelection == 0){
+          return 'orange'
+        }
+        else if(this.genderSelection == 1){
+          return 'teal'
+        }
+        else {
+          return 'red';
+        }
+      }
+    },
+    watch: {
       stallSelection: function() {
         console.log(this.stallSelection);
         this.checkForDisabled();
       }
     },
     methods: {
+      ...mapActions(["updateGender"]),
+
       bookStall(stallNum, gender, floor){
         if(stallNum!=null && gender!=null && floor!=null){
           console.log('stall has been booked');
